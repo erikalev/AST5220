@@ -11,7 +11,7 @@ module time_mod
 
   integer(i4b)                           :: n_eta              ! Number of eta grid poins
   real(dp),    allocatable, dimension(:) :: x_eta, a_eta       ! Grid points for eta
-  real(dp),    allocatable, dimension(:) :: eta, eta2          ! Eta and eta'' at each grid point
+  real(dp),    allocatable, dimension(:) :: eta, eta2, eta_intp          ! Eta and eta'' at each grid point
   real(dp),    allocatable, dimension(:) :: Omega_m, Omega_b, Omega_r, Omega_lambda, Omega_nu, H
 contains
 
@@ -44,7 +44,7 @@ contains
        x_t(i) = x_start_rec - (i-1)*(x_start_rec - x_end_rec)/(n1-1)
     end do
 
-    do i=1, n2                              ! after recombination
+    do i=1, n2                             ! after recombination
        x_t(n1+i) = x_end_rec - i*(x_end_rec - x_0)/(n2-1)
     end do
 	write(*,*) H_0
@@ -57,6 +57,7 @@ contains
     allocate(eta2(n_eta))
 
 
+	! Finding the x_eta-values
     dx = (x_eta2 - x_eta1)/(n_eta - 1)
     x_eta(1) = x_eta1
     do i=2, n_eta
@@ -65,13 +66,13 @@ contains
 
 
     ! Integrating eta-values
-    eta(1) = c*a_init/(H_0*sqrt(Omega_r0))                      ! Initial eta-value
-    dx = abs(1.d-2*(x_eta(2)-x_eta(1)))                      ! Step length
-    eps = 1.d-10        
+    eta(1) = c*a_init/(H_0*sqrt(Omega_r0))                                                  ! Initial eta-value
+    dx = abs(1.d-2*(x_eta(2)-x_eta(1)))                                                     ! Step length
+    eps = 1.d-10                                                  
     hmin = 0.d0
     do i=2, n_eta
-       eta(i) = eta(i-1)
-       call odeint(eta(i:i), x_eta(i-1), x_eta(i), eps, dx, hmin, derivs, bsstep, output)
+       eta(i) = eta(i-1)										                            ! old value to be updated in next line
+       call odeint(eta(i:i), x_eta(i-1), x_eta(i), eps, dx, hmin, derivs, bsstep, output)   ! updating eta(i)-value
     end do
     
     allocate(Omega_r(n_eta))
@@ -91,17 +92,32 @@ contains
        Omega_lambda(i) = 1.d0 - Omega_r(i) - Omega_m(i) - Omega_b(i) - Omega_nu(i)
     end do
     
-    ! write values to file
+    yp1 = 1.d30
+    ypn = 1.d30
+    call spline(x_eta, eta, yp1, ypn, eta2)         ! finding the derivaties of the curve
+
+
+	! finding the interpolated eta-values
+    allocate(eta_intp(5000))
+    dx = (x_eta2 - x_eta1)/(n_eta - 1)/5.0			! interpolation step size
+	eta_intp(1) = eta(1)						
+    do i=2, 5000
+       eta_intp(i) = get_eta(x_eta(1) + (i - 1)*dx)
+    end do
+ 
+
+    ! write values to file                                                                                                                                                                                         
     open(54, file = "data.dat")
     do i=1,n_eta
        write(54,'(8(E17.8))') eta(i), x_eta(i), Omega_m(i), Omega_b(i), Omega_r(i), Omega_lambda(i), Omega_nu(i), H(i)
     end do
     close(54)
 
-
-    yp1 = 1.d30
-    ypn = 1.d30
-    call spline(x_eta, eta, yp1, ypn, eta2)
+    open(53, file = "eta_intp.dat")
+    do i=1, 5000
+       write(53, "(1(E17.8))") eta_intp(i)
+    end do
+    close(53)
     
   end subroutine initialize_time_mod
 
@@ -158,9 +174,6 @@ contains
     real(dp), intent(in) :: x_in
     real(dp)             :: get_eta
     get_eta = splint(x_eta, eta, eta2, x_in)
-    !deallocate(a_eta)
-    !deallocate(eta)
-    !deallocate(eta2)
   end function get_eta
 
 end module time_mod
