@@ -18,7 +18,8 @@ contains
   subroutine initialize_time_mod
     implicit none
     integer(i4b) :: i, n, n1, n2
-    real(dp)     :: z_start_rec, z_end_rec, z_0, x_start_rec, x_end_rec, x_0, dx, x_eta1, x_eta2, a_init, eta_init, eps, hmin, yp1, ypn, rho_c
+    real(dp)     :: z_start_rec, z_end_rec, z_0, x_start_rec, x_end_rec, x_0, dx, x_eta1, x_eta2, a_init, eta_init, eps, hmin, yp1
+    real(dp)     :: ypn, rho_c
     real(dp), dimension(1)     :: y
     ! Define two epochs, 1) during and 2) after recombination.
     n1          = 200                       ! Number of grid points during recombination
@@ -47,7 +48,7 @@ contains
     do i=1, n2                             ! after recombination
        x_t(n1+i) = x_end_rec - i*(x_end_rec - x_0)/(n2-1)
     end do
-	write(*,*) H_0
+
     a_t = exp(x_t)
 
     ! Task: 1) Compute the conformal time at each eta time step

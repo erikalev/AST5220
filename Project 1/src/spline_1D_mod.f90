@@ -125,7 +125,6 @@ contains
     real(dp)     :: a, b, h
 
     n = size(xa)
-
     klo = max(min(locate(xa,x),n-1),1)
     khi = klo+1
     h   = xa(khi) - xa(klo)
@@ -523,7 +522,7 @@ contains
           fm = splint(x_0, y_0, y2_0, xm)-zeropt
           s  = sqrt(fm**2 - fl*fh)
           if (s == 0.d0) return
-          xnew = xm+(xm-xl)*(sign(1.0,fl-fh)*fm/s)
+          xnew = xm+(xm-xl)*(sign(int(1.0),int(fl-fh))*fm/s)
           if (abs(xnew-zriddr) < xacc) return
           zriddr = xnew
           fnew   = splint(x_0, y_0, y2_0, zriddr)-zeropt
